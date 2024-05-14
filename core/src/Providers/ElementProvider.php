@@ -11,18 +11,35 @@ abstract class ElementProvider implements ProviderInterface
     protected string $model;
     protected string $name;
     protected string $modelTime;
+    protected array $cache = [];
+    protected array $timestamps = [];
 
-    protected function getElement($tpl): ?Model
+    protected function getElement($name): ?Model
     {
-        return (new $this->model())
+        if (isset($this->cache[$name])) {
+            return $this->cache[$name];
+        }
+
+        $element = (new $this->model())
             ->newQuery()
-            ->where(is_numeric($tpl) ? ['id' => (int)$tpl] : [$this->name => (string)$tpl])
+            ->where(is_numeric($name) ? ['id' => (int)$name] : [$this->name => (string)$name])
             ->first();
+
+        if ($element) {
+            $this->cache[$name] = $element;
+        }
+
+        return $element;
     }
 
-    protected function getElementTime(int $id): ?Model
+    protected function getElementTime(int $id): int
     {
-        return (new $this->modelTime())->newQuery()->find($id);
+        if (!isset($this->timestamps[$id])) {
+            $model = (new $this->modelTime())->newQuery()->select('timestamp')->find($id);
+            $this->timestamps[$id] = $model ? (int)$model->timestamp : time();
+        }
+
+        return $this->timestamps[$id];
     }
 
     public function getList(): iterable
@@ -42,13 +59,8 @@ abstract class ElementProvider implements ProviderInterface
     {
         /** @var StaticElement $element */
         if ($element = $this->getElement($tpl)) {
-            if ($file = $element->getStaticFile()) {
-                $time = (int)filemtime($file);
-            } elseif ($timestamp = $this->getElementTime($element->id)) {
-                $time = (int)strtotime($timestamp->timestamp);
-            } else {
-                $time = time();
-            }
+            $file = $element->getStaticFile();
+            $time = $file ? (int)filemtime($file) : $this->getElementTime($element->id);
 
             return $element->getContent();
         }
@@ -60,15 +72,12 @@ abstract class ElementProvider implements ProviderInterface
     {
         /** @var StaticElement $element */
         if ($element = $this->getElement($tpl)) {
-            if ($file = $element->getStaticFile()) {
-                return (int)filemtime($file);
-            }
-            if ($timestamp = $this->getElementTime($element->id)) {
-                return (int)strtotime($timestamp->timestamp);
-            }
+            $file = $element->getStaticFile();
+
+            return $file ? (int)filemtime($file) : $this->getElementTime($element->id);
         }
 
-        return 0;
+        return time();
     }
 
     public function verify(array $templates): bool

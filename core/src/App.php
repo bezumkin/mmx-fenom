@@ -29,8 +29,7 @@ class App extends \Fenom
         if (is_readable($path)) {
             $this->addProvider('file', new Providers\FileProvider($path));
         } else {
-            $message = '"' . $path . '" is not readable, file provider disabled';
-            $this->logEntry(modX::LOG_LEVEL_INFO, $message);
+            $this->logEntry(modX::LOG_LEVEL_INFO, '"' . $path . '" is not readable, file provider disabled');
         }
 
         $this->setDefaultOptions();
@@ -125,11 +124,7 @@ class App extends \Fenom
         $this->_modifiers['tag'] = static function ($string) {
             $string = preg_replace('/&amp;(#\d+|[a-z]+);/i', '&$1;', htmlspecialchars($string));
 
-            return str_replace(
-                ['[', ']', '`', '{', '}'],
-                ['&#91;', '&#93;', '&#96;', '&#123;', '&#125;'],
-                $string
-            );
+            return str_replace(['[', ']', '`', '{', '}'], ['&#91;', '&#93;', '&#96;', '&#123;', '&#125;'], $string);
         };
 
         $this->_modifiers['print'] = function ($var, $wrap = true) {
@@ -167,5 +162,10 @@ class App extends \Fenom
         }
 
         return '';
+    }
+
+    public function render($template, array $vars = []): string
+    {
+        return $this->fetch($template, $vars);
     }
 }
