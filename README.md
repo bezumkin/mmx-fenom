@@ -36,9 +36,8 @@ You can get and configure the instance of Fenom in any snippet.
 
 For example, snippet `Test`:
 ```php
-
-$tpl = $modx->getOption('tpl');
-$var = $modx->getOption('var');
+$tpl = $modx->getOption('tpl', $scriptProperties);
+$var = $modx->getOption('var', $scriptProperties);
 
 if ($service = $modx->services->get('mmxFenom')) {
     $service->addModifier('hello', static function($var) {
@@ -101,7 +100,7 @@ JSON encoded string with options to override defaults of Fenom instance. For exa
 See [Fenom documentation][fenom_docs] for more information.
 
 The default setting are:
-```
+```json
 {
     "disable_cache": false,
     "force_compile": false,
@@ -133,10 +132,27 @@ Current id of MODX resource is: {$.modx->resource->id}
 
 ### Modifiers
 
-There are only 3 default modifiers:
+Feel free to use all the [standard Fenom modifiers][fenom_mods].
+
+There are also 3 additional modifiers:
 - `print` - print escaped variable, `{$var | print}`
 - `dump` - dump escaped variable, `{$var | dump}`
 - `esc` - escape MODX tags in variable, `{$var | esc}`
+
+### Accessors
+
+You can access system accessors in your template:
+
+- `$.env` to access `$_ENV`
+- `$.get` to access `$_GET`
+- `$.post` to access `$_POST`
+- `$.files` to access `$_FILES`
+- `$.cookie` to access `$_COOKIE`
+- `$.server` to access `$_SERVER`
+- `$.session` to access `$_SESSION`
+- `$.request` to access `$_REQUEST`
+
+For example `{$.server | print}`
 
 ### Database Tables
 
@@ -155,3 +171,4 @@ When caching is enabled, you will get compiled templates in `core/cache/mmx-feno
 This directory will be deleted when you clear MODX cache.
 
 [fenom_docs]: https://github.com/fenom-template/fenom/blob/master/docs/en/configuration.md#template-settings
+[fenom_mods]: https://github.com/fenom-template/fenom/tree/master/docs/en/mods
