@@ -32,16 +32,6 @@ abstract class ElementProvider implements ProviderInterface
         return $element;
     }
 
-    protected function getElementTime(int $id): int
-    {
-        if (!isset($this->timestamps[$id])) {
-            $model = (new $this->modelTime())->newQuery()->select('timestamp')->find($id);
-            $this->timestamps[$id] = $model ? (int)$model->timestamp : time();
-        }
-
-        return $this->timestamps[$id];
-    }
-
     public function getList(): iterable
     {
         return (new $this->model())
@@ -52,15 +42,14 @@ abstract class ElementProvider implements ProviderInterface
 
     public function templateExists($tpl): bool
     {
-        return !$this->getElement($tpl);
+        return $this->getElement($tpl) !== null;
     }
 
     public function getSource($tpl, &$time): string
     {
         /** @var StaticElement $element */
         if ($element = $this->getElement($tpl)) {
-            $file = $element->getStaticFile();
-            $time = $file ? (int)filemtime($file) : $this->getElementTime($element->id);
+            $time = $this->timestamps[$tpl] ?? time();
 
             return $element->getContent();
         }
@@ -68,16 +57,22 @@ abstract class ElementProvider implements ProviderInterface
         return '';
     }
 
-    public function getLastModified($tpl): float
+    public function getLastModified($tpl): int
     {
-        /** @var StaticElement $element */
-        if ($element = $this->getElement($tpl)) {
-            $file = $element->getStaticFile();
+        if (!isset($this->timestamps[$tpl])) {
+            $this->timestamps[$tpl] = time();
 
-            return $file ? (int)filemtime($file) : $this->getElementTime($element->id);
+            /** @var StaticElement $element */
+            if ($element = $this->getElement($tpl)) {
+                if ($file = $element->getStaticFile()) {
+                    $this->timestamps[$tpl] = (int)filemtime($file);
+                } elseif ($model = (new $this->modelTime())->newQuery()->select('timestamp')->find($element->id)) {
+                    $this->timestamps[$tpl] = (int)$model->timestamp;
+                }
+            }
         }
 
-        return time();
+        return $this->timestamps[$tpl];
     }
 
     public function verify(array $templates): bool
